@@ -1,12 +1,13 @@
 package core
 
+import Brocess
 import core.schedule.PriorityQueue
 import core.schedule.ScheduleEntry
 
 class Environment(initialTime: Double = 0.0) {
     private val heap = PriorityQueue<ScheduleEntry>()
     private val entryIdIterator: Iterator<Int> = generateSequence(0) { it + 1 }.iterator()
-    private val processes = mutableListOf<Iterator<Event?>>()
+    private val processes = mutableListOf<Brocess<Event?>>()
     var now: Double = initialTime
         private set
 
@@ -15,23 +16,23 @@ class Environment(initialTime: Double = 0.0) {
         heap.enqueue(ScheduleEntry(now + event.delay.toDouble(), entryIdIterator.next(), event))
     }
 
-    // TODO: this function name is confusing given the verb/noun confusion. Maybe rename to "addProcess"?
-    fun process(sequence: Sequence<Event?>) {
-        schedule(Event(0, EventPriority.URGENT) { processes += sequence.iterator() })
+    fun addProcess(brocess: Brocess<Event?>) {
+        schedule(Event(0, EventPriority.URGENT) { processes += brocess })
     }
 
     private fun step() {
         heap.dequeue()?.let { entry ->
             now = entry.entryTime
             // TODO make this a debug level logger call
-            //println("core.Event \"${entry.event.note}\" at time ${entry.entryTime} with priority ${entry.event.priority}")
+            println("core.Event \"${entry.event.note}\" at time ${entry.entryTime} with priority ${entry.event.priority}")
             entry.event.executeCallbacks()
         }
 
         // Get next event from any processes. Processes are expected to yield null if there is no NEW event.
         processes.forEach { process ->
             if (process.hasNext()) {
-                schedule(process.next())
+                val e = process.next()
+                schedule(e)
             }
         }
     }
